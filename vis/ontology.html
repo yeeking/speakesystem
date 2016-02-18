@@ -1,0 +1,173 @@
+
+<!doctype html>
+<html>
+<head>
+    <title>Network | Hierarchical layout</title>
+
+    <style type="text/css">
+        body {
+            font: 10pt sans;
+        }
+
+        #mynetwork {
+            width: 600px;
+            height: 600px;
+            border: 1px solid lightgray;
+        }
+    </style>
+
+    <script type="text/javascript" src="vis.js"></script>
+     <script type="text/javascript" src="cats.js"></script>
+<!--    <link href="vis.css" rel="stylesheet" type="text/css"/> -->
+
+
+    <script type="text/javascript">
+        var nodes = null;
+        var edges = null;
+        var network = null;
+        var data;
+
+        function destroy() {
+            if (network !== null) {
+                network.destroy();
+                network = null;
+            }
+        }
+
+        function draw() {
+            destroy();
+            // randomly create some nodes and edges
+            //var nodeCount = document.getElementById('nodeCount').value;
+            //var data = getScaleFreeNetwork(nodeCount);
+            data = raw_data;
+            extra_nodes = [];
+            extra_edges  =[];
+            //console.log(data);
+            for (var i=0;i<data.nodes.length;i++){
+                var node = data.nodes[i];
+                 data.nodes[i].font = {size:32, color:'black', face:'arial'};
+                data.nodes[i].color = {background:'white', border:'#000'};
+                data.nodes[i].borderWidth = data.nodes[i].value * 0.3;
+                data.nodes[i].label = data.nodes[i].label + ": "+data.nodes[i].value;
+                //data.nodes[i].shape = 'box';
+                //data.nodes[i].height = Math.random() * 10;
+                //data.nodes[i].size = 500;
+                // create extra nodes for each linked comment and connect them to 
+                // this item
+                //console.log("adding some nodex "+node.value);
+                for (var j=0; j<node.value;j++){
+                    var node_id = ((i+1) * 1000)  + j;
+                    //console.log(node_id);
+                    var new_node = {
+                        id:node_id, 
+                        //label:node_id, 
+                        shape:"dot", 
+                        value:5
+                    };
+                    extra_nodes.push(new_node);
+                     // connect it 
+                     extra_edges.push({
+                        from:node.id, 
+                        to:node_id
+                     });
+                }
+                //console.log("done adding nodes");
+             }
+             console.log("number of nodes: "+data.nodes.length);
+
+            // create a new node
+            // weight the edges
+            for (var i=0; i<data.edges.length;i++){
+                    data.edges[i].arrows = {to : true };
+                //data.edges[i].value = 0.1;
+            }
+
+            // find the nodes that have not been connected
+            var conn_nodes = [];
+            for (var i=0; i<data.edges.length;i++){
+                // the target of this edge is connected
+                conn_nodes.push({id:data.edges[i].to});
+            }
+
+            var topNode = {id:0, label:"", shape:"dot", size:0};
+            for (var i=0;i<data.nodes.length;i++){
+                // if this node id has not been connected to, 
+                // connect to it
+                var conn = false;
+                for (var j=0;j<conn_nodes.length;j++){
+                    if (conn_nodes[j].id == data.nodes[i].id){
+                        // this node has been connected to
+                        conn = true;
+                    }
+                }
+                if (!conn){
+                    data.edges.push({from:0, to:data.nodes[i].id, color:'white', dashes:true, value:0});
+                }                
+            }
+
+            data.nodes.push(topNode);
+
+            // finally, add the extra nodes and extra edges showing the category counts
+            // console.log("adding extra node "+extra_nodes.length);
+            // for (var i=0; i<extra_nodes.length;i++){
+            //     data.nodes.push(extra_nodes[i]);
+            // } console.log("adding extra edges"+extra_edges.length);
+            // for (var i=0; i<extra_edges.length;i++){
+            //     data.edges.push(extra_edges[i]);
+            // }
+
+
+
+            // create a network
+            var container = document.getElementById('mynetwork');
+            //var directionInput = document.getElementById("direction").value;
+            var options = {
+                layout: {
+                    hierarchical: {
+                        levelSeparation:400, 
+                        nodeSpacing:50, 
+                        direction: "LR",
+                        }   
+                }, 
+                physics: {
+                    enabled: true,     
+                }, 
+                edges: {
+                    // arrows: {to : true }, 
+                    // smooth: {
+                    //     //type: 'cubicBezier',
+                    //     roundness: 0.4
+                    // }
+                },
+                nodes: {
+                    shape: 'box',
+                    // scaling: {
+                    //     customScalingFunction: function (min,max,total,value) {
+                    //         //console.log("calcing "+value+" "+min+" "+max+" "+total+" "+(value/total));
+                    //      return value/total * 100;
+                    //   },
+                    //  min:1,
+                    // max:23
+                    // }
+                }
+            };
+    
+            //options = {};
+            network = new vis.Network(container, data, options);
+
+            // add event listeners
+            network.on('select', function (params) {
+                document.getElementById('selection').innerHTML = 'Selection: ' + params.nodes;
+            });
+        }
+
+    </script>
+</head>
+
+<body onload="draw();">
+
+
+<div id="mynetwork" style="height:2000px;width:1000px"></div>
+
+</body>
+</html>
